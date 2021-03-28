@@ -1,0 +1,7 @@
+pathlib
+simple_term_menu
+pyfiglet
+PyInquirer
+termcolor
+termcolor
+bs4

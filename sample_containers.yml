@@ -1,0 +1,96 @@
+version: "3.3"
+#Node - goblin - example.dev
+services:
+  # Database
+  goblin_mysql:
+    image: mysql:5.7
+    volumes:
+      - goblin_mysql_main:/var/lib/mysql:rw
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: oraORAoraORA420
+      MYSQL_DATABASE: goblinDB
+      MYSQL_USER: goblin
+      MYSQL_PASSWORD: mudaMUDAmudaMUD420
+    networks:
+      goblin-net:
+        ipv4_address: 172.19.0.3
+    
+  # example.dev
+  goblin_wordpress_main:
+    depends_on:
+      - goblin_mysql
+    image: wordpress:latest
+    volumes:
+      - goblin_wordpress_main_webroot:/var/www/html:rw
+      - goblin_wordpress_main_apache:/etc/apache2:rw
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: goblin_mysql:3306
+      WORDPRESS_DB_NAME: goblinDB
+      WORDPRESS_DB_USER: goblin
+      WORDPRESS_DB_PASSWORD: mudaMUDAmudaMUD420
+    networks:
+      goblin-net:
+        ipv4_address: 172.19.0.4
+  
+  # paste.example.dev
+  goblin_paste:
+    image: privatebin/nginx-fpm-alpine
+    volumes:
+      - goblin_paste:/srv/data:rw
+    restart: always
+    networks:
+      goblin-net:
+        ipv4_address: 172.19.0.5
+
+  # media.example.dev
+  goblin_jellyfin:
+    image: jellyfin/jellyfin
+    #user: 1000:1000
+    volumes:
+      - goblin_jf_config:/config
+      - goblin_jf_cache:/cache
+      - goblin_jf_media:/media
+      - goblin_jf_media2:/media2:ro
+      - goblin_jf_logs:/var/log:rw
+    restart: "unless-stopped"
+    networks:
+      goblin-net:
+        ipv4_address: 172.19.0.6
+ 
+# Storage
+volumes:
+  #Database
+  goblin_mysql_main:
+    driver: local
+  
+  #Wordpress
+  goblin_wordpress_main_webroot:
+    driver: local
+  goblin_wordpress_main_apache:
+    driver: local
+
+  #Paste
+  goblin_paste:
+    driver: local
+  
+  #Jellyfin
+  goblin_jf_config:
+    driver: local
+  goblin_jf_cache:
+    driver: local
+  goblin_jf_media:
+    driver: local
+  goblin_jf_media2:
+    driver: local
+  goblin_jf_logs:
+    driver: local
+
+# Network
+networks:
+  goblin-net:
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
