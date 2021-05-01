@@ -5,3 +5,4 @@ PyInquirer
 termcolor
 termcolor
 bs4
+python-dotenv

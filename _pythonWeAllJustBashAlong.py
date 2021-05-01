@@ -1,5 +1,5 @@
 # =========================================================================================
-#   Last update: 03_27_2021_2036
+#   Last update:    01_05_2021_0607
 #   Description -   Python terminal menu interface for running bash scripts.
 # =========================================================================================
 from __future__ import print_function, unicode_literals
@@ -13,6 +13,9 @@ from pyfiglet import Figlet
 from PyInquirer import style_from_dict, Token, prompt, Separator
 from pprint import pprint
 from termcolor import colored
+from dotenv import load_dotenv
+import subprocess
+from os import path
 
 # =========================================================================================
 # Script config
@@ -21,13 +24,15 @@ from termcolor import colored
 os.system('cls||clear')
 sysENV = str(platform.system())
 
-targetUser = ""
-targetEnvironment = ""
-targetDomain = ""
-bash_gui = ""
-
+load_dotenv()
+active_env = os.getenv('ACTIVE_ENV')
+active_user = os.getenv('ACTIVE_USER')
+active_domain = os.getenv('ACTIVE_DOMAIN')
+bash_whiptail = os.getenv('BASH_WHIPTAIL')
+eth_wallet = os.getenv('ETH_WALLET')
+script_folder_name = "scripts"
 script_dir = str(os.path.dirname(os.path.realpath(__file__)))
-bash_run = "bash " + script_dir + "/" + "scripts" + "/"
+bash_run = "bash " + script_dir + "/" + script_folder_name + "/"
 
 style = style_from_dict({
     Token.Separator: '#cc5454',
@@ -42,6 +47,7 @@ style = style_from_dict({
 
 # =========================================================================================
 # Script names
+script_validator = "validator.sh"
 script_debug = "debug.sh"
 script_crypto = "crypto.sh"
 script_oscp = "oscp.sh"
@@ -55,43 +61,72 @@ script_service_wireguard = "service_wireguard.sh"
 def main(argv):
     # =========================================================================================
     def infoBanner():
+        global active_env
+        global active_user
+        global active_domain
+        global bash_whiptail
+        global eth_wallet
+
+        loadEnvFile()
         os.system('cls||clear')
         f = Figlet(font='slant')
+        
         print(f.renderText('Linux Admin'))
         print("")
         print(colored('---------- Settings ----------', 'blue'))
-        env = "Environment: " + targetEnvironment
-        user = "User: " + targetUser
-        domain = "Domain: " + targetDomain
-        gui = "Bash Whiptail: " + bash_gui
-        sysType = "System: " + sysENV
-        print(colored(env, 'green'))
-        print(colored(user, 'green'))
-        print(colored(domain, 'green'))
-        print(colored(gui, 'green'))
-        print(colored(sysType, 'green'))
+        
+        #REVIEW: os.getenv() does not seem to read from the file when called again.
+        #active_env = "Environment: " + active_env
+        #active_user = "User: " + active_user
+        #domactive_domainain = "Domain: " + active_domain
+        #bash_whiptail = "Bash Whiptail: " + bash_whiptail
+        #eth_wallet = os.getenv('ETH_WALLET') <<<<< REVIEW
+        
+        sysType = "System=" + sysENV
+        print(colored(sysType, 'yellow'))
+        print(colored(active_env, 'green'))
+        print(colored(active_user, 'green'))
+        print(colored(active_domain, 'green'))
+        print(colored(bash_whiptail, 'green'))
+        print(colored(eth_wallet, 'green'))
         print(colored('------------------------------', 'blue'))
     # =========================================================================================
-
+    def loadEnvFile():
+        global active_env
+        global active_user
+        global active_domain
+        global bash_whiptail
+        global eth_wallet
+        
+        try:
+            with open ('.env', 'r') as envFile:
+                for line in envFile:
+                    if "ETH_WALLET" in line:
+                        eth_wallet = line.strip()
+                    elif "ACTIVE_ENV" in line:
+                        active_env = line.strip()
+                    elif "ACTIVE_USER" in line:
+                        active_user = line.strip()
+                    elif "ACTIVE_DOMAIN" in line:
+                        active_domain = line.strip()
+                    elif "BASH_WHIPTAIL" in line:
+                        bash_whiptail = line.strip()
+        except:
+            runScript(script_validator, "")
+            loadEnvFile()
+            
     def runScript(scriptName, scriptArgs):
-        if targetEnvironment == "PRX - Proxmox server VM":
-            wrk_env = "PRX"
-        elif targetEnvironment == "LAB - Workstation or a Proxmox Desktop VM":
-            wrk_env = "LAB"
-        elif targetEnvironment == "VPS - Cloud VPS provider (Linode,Google)":
-            wrk_env = "VPS"
-        elif targetEnvironment == "AWS - Amazon Web Services (user: ubuntu)":
-            wrk_env = "AWS"
-        elif targetEnvironment == "VBOX - VirtualBox VM":
-            wrk_env = "VBOX"
-        elif targetEnvironment == "DKR - Docker container":
-            wrk_env = "DKR"
+        command = bash_run + scriptName + " " + scriptArgs
+        script_location = script_dir + "/" + script_folder_name + "/" + scriptName
+        
+        script_check = str(path.exists(script_location))
+        if "True" in script_check:
+            os.system(command)
         else:
-            wrk_env = ""
-        # scriptArgs = ("-a -b -c -d")
-        command = bash_run + scriptName + " " + bash_gui + \
-            " " + wrk_env + " " + targetUser + " " + targetDomain + " " + scriptArgs
-        os.system(command)
+            msg = "== STATUS: " + scriptName + " Script not found =="
+            print(colored(msg, 'red'))
+            quit() 
+        
     # =========================================================================================
 
     def menu_MAIN():
@@ -197,11 +232,12 @@ def main(argv):
         menuOption3 = "[c] Start mining now"
         menuOption4 = "[d] Delayed mining"
         menuOption5 = "[e] Open ETH-Wallet"
-        menuOption6 = "[f] <-- Main menu"
+        menuOption6 = "[f] Set wallet address"
+        menuOption7 = "[g] <-- Main menu"
         menuQuit = "[q] <<-- quit"
 
         options = [
-            menuOption1, menuOption2, menuOption3, menuOption4, menuOption5, menuOption6, menuQuit]
+            menuOption1, menuOption2, menuOption3, menuOption4, menuOption5, menuOption6, menuOption7, menuQuit]
         terminalMainMenu = TerminalMenu(options, title=menuTitle)
         os.system('cls||clear')
         menu_Display = terminalMainMenu.show()
@@ -221,6 +257,8 @@ def main(argv):
         elif input_optionSelected == menuOption5:
             runScript(script_crypto, "-o")  # Open Eth-Wallet
         elif input_optionSelected == menuOption6:
+            runScript(script_crypto, "-a")  # Set wallet address
+        elif input_optionSelected == menuOption7:
             return
         elif input_optionSelected == menuQuit:
             print("*** Arrivederci! ***")
@@ -341,11 +379,6 @@ def main(argv):
     # =========================================================================================
 
     def script_setting():
-        global targetUser
-        global targetEnvironment
-        global targetDomain
-        global bash_gui
-
         questions = [
             {
                 'type': 'list',
@@ -354,19 +387,22 @@ def main(argv):
                 'choices': [
                     Separator('= Working Environment ='),
                     {
-                        'name': 'PRX - Proxmox server VM'
+                        'name': 'NONE'
                     },
                     {
-                        'name': 'LAB - Workstation or a Proxmox Desktop VM'
+                        'name': 'PRX-Proxmox_server_VM'
                     },
                     {
-                        'name': 'VPS - Cloud VPS provider (Linode,Google)'
+                        'name': 'LAB-Workstation_or_Proxmox_Desktop_VM'
                     },
                     {
-                        'name': 'VBOX - VirtualBox VM'
+                        'name': 'VPS-Cloud_VPS_provider_(Linode,Google)'
                     },
                     {
-                        'name': 'DKR - Docker container'
+                        'name': 'VBOX-VirtualBox_VM'
+                    },
+                    {
+                        'name': 'DKR-Docker_container'
                     },
                 ],
             },
@@ -377,8 +413,13 @@ def main(argv):
                 'choices': [
                     Separator('= Script/Target User ='),
                     {
+                        'name': 'NONE'
+                    },
+                    {
+                        'name': 'ubuntu',
+                    },
+                    {
                         'name': 'goblinslayer',
-                        'checked': True
                     },
                     {
                         'name': 'goblin'
@@ -391,6 +432,9 @@ def main(argv):
                 'name': 'domain',
                 'choices': [
                     Separator('= Working Domain ='),
+                    {
+                        'name': 'NONE'
+                    },
                     {
                         'name': 'example.dev'
                     },
@@ -418,11 +462,25 @@ def main(argv):
             }, ]
 
         answers = prompt(questions, style=style)
-        targetUser = answers["user"]
-        targetEnvironment = answers["environment"]
-        targetDomain = answers["domain"]
-        bash_gui = answers["display"]
-
+        loadEnvFile()
+        envFile = open(".env", "rt")
+        tmpData = envFile.read()
+        
+        new_env_var = "ACTIVE_ENV=" + answers["environment"]
+        new_user_var = "ACTIVE_USER=" + answers["user"]
+        new_domain_var = "ACTIVE_DOMAIN=" + answers["domain"]
+        new_bash_var = "BASH_WHIPTAIL=" + answers["display"]
+        
+        tmpData = tmpData.replace(active_env, new_env_var)
+        tmpData = tmpData.replace(active_user, new_user_var)
+        tmpData = tmpData.replace(active_domain, new_domain_var)
+        tmpData = tmpData.replace(bash_whiptail, new_bash_var)
+        envFile.close()
+        
+        envFile = open(".env", "wt")
+        envFile.write(tmpData)
+        envFile.close()
+        
     # =========================================================================================
 
     # ===================

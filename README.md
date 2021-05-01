@@ -31,27 +31,20 @@ Tested on Ubuntu 18.04 & 20.04
 
 <br>
 
-## Python 3 & Pip3
+## Install
 
 ```
-sudo apt install -y python3
-sudo apt install -y python3-pip
-```
-
-<br>
-
-## Install the required packages
-
-```
-pip3 install -r requirements.txt
+cd pythonwealljustbashalong
+bash install.sh
 ```
 
 <br>
+
 
 ## Usage
 
 ```
-python3 _pythonWeAllJustBashAlong
+python3 _pythonWeAllJustBashAlong.py
 ```
 
 <br><br>
